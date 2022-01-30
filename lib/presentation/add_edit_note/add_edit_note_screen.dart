@@ -1,8 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_note_app/domain/model/note.dart';
+import 'package:flutter_note_app/presentation/add_edit_note/add_edit_note_event.dart';
+import 'package:flutter_note_app/presentation/add_edit_note/add_edit_note_view_model.dart';
 import 'package:flutter_note_app/ui/colors.dart';
+import 'package:provider/provider.dart';
 
 class AddEditNoteScreen extends StatefulWidget {
-  const AddEditNoteScreen({Key? key}) : super(key: key);
+  final Note? note;
+
+  const AddEditNoteScreen({Key? key, this.note}) : super(key: key);
 
   @override
   State<AddEditNoteScreen> createState() => _AddEditNoteScreenState();
@@ -11,6 +19,7 @@ class AddEditNoteScreen extends StatefulWidget {
 class _AddEditNoteScreenState extends State<AddEditNoteScreen> {
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
+  StreamSubscription? _streamSubscription;
 
   final List<Color> noteColors = [
     roseBud,
@@ -20,26 +29,52 @@ class _AddEditNoteScreenState extends State<AddEditNoteScreen> {
     illusion,
   ];
 
-  Color _color = roseBud;
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      final viewModel = context.read<AddEditNoteViewModel>();
+      _streamSubscription = viewModel.eventStream.listen((event) {
+        event.when(saveNote: () {
+          Navigator.pop(context, true);
+        });
+      });
+    });
+  }
 
   @override
   void dispose() {
     _titleController.dispose();
     _contentController.dispose();
+    _streamSubscription?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final viewModel = context.watch<AddEditNoteViewModel>();
+
     return Scaffold(
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () {
+          if (_titleController.text.isEmpty ||
+              _contentController.text.isEmpty) {
+            const snackBar = SnackBar(content: Text('제목이나 내용이 비어 있습니다.'));
+            ScaffoldMessenger.of(context).showSnackBar(snackBar);
+          } else {
+            viewModel.onEvent(AddEditNoteEvent.saveNote(
+              widget.note == null ? null : widget.note!.id,
+              _titleController.text,
+              _contentController.text,
+            ));
+          }
+        },
         child: const Icon(Icons.save),
       ),
       body: AnimatedContainer(
         padding:
             const EdgeInsets.only(left: 16, right: 16, bottom: 16, top: 48),
-        color: _color,
+        color: Color(viewModel.color),
         duration: const Duration(milliseconds: 500),
         child: Column(
           children: [
@@ -49,13 +84,12 @@ class _AddEditNoteScreenState extends State<AddEditNoteScreen> {
                   .map(
                     (color) => InkWell(
                       onTap: () {
-                        setState(() {
-                          _color = color;
-                        });
+                        viewModel
+                            .onEvent(AddEditNoteEvent.changeColor(color.value));
                       },
                       child: _buildBackgroundColor(
                         color: color,
-                        selected: _color == color,
+                        selected: viewModel.color == color.value,
                       ),
                     ),
                   )
