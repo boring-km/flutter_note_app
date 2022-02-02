@@ -26,6 +26,7 @@ dev_dependencies:
   freezed: ^1.1.1
   build_runner: ^2.1.7
   sqflite_common_ffi: ^2.1.0+2
+  mockito: ^5.0.17
 
 flutter:
 
