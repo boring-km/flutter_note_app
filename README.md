@@ -7,7 +7,7 @@ Flutter 중급 - 클린 아키텍처
 ### 프로젝트 구조
 /lib 아래에서 코드 작성
 
-### entity(data) layer
+#### entity(data) layer
 - /lib/data/data_source: 로컬 DB와 접근
 - /lib/data/repository: domain layer의 repository를 구현 
 
